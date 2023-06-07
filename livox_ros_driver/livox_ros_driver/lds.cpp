@@ -26,10 +26,50 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <chrono>
 
+#ifdef _WIN32
+int setenv(const char *name, const char *value, int overwrite)
+{
+    int errcode = 0;
+    if(!overwrite) {
+        size_t envsize = 0;
+        errcode = getenv_s(&envsize, NULL, 0, name);
+        if(errcode || envsize) return errcode;
+    }
+    return _putenv_s(name, value);
+}
+int unsetenv(const char *name)
+{
+    return _putenv_s(name, "");
+}
+time_t timegm(struct tm* tm) {
+    // Save the original time zone.
+    char* old_tz = _strdup(getenv("TZ"));
+
+    // Temporarily switch to UTC.
+    setenv("TZ", "", 1);
+    _tzset();
+
+    // Convert the time.
+    time_t ret = mktime(tm);
+
+    // Restore the original time zone.
+    if (old_tz) {
+        setenv("TZ", old_tz, 1);
+        free(old_tz);
+    }
+    else {
+        unsetenv("TZ");
+    }
+    _tzset();
+
+    return ret;
+}
+#endif
 namespace livox_ros {
 
 /** Common function --------------------------------------------------------- */

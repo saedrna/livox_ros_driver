@@ -26,11 +26,15 @@
 #define USER_UART_H_
 
 #include <stdint.h>
+#ifndef _WIN32
 #include <sys/fcntl.h>
+#include <termios.h>
+#else
+#include "termiWin.h"
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <termios.h>
 
 namespace livox_ros {
 
@@ -71,8 +75,8 @@ class UserUart {
   ~UserUart();
 
   int Setup(uint8_t baudrate_index, uint8_t parity);
-  ssize_t Write(const char *buffer, size_t size);
-  ssize_t Read(char *buffer, size_t size);
+  size_t Write(const char *buffer, size_t size);
+  size_t Read(char *buffer, size_t size);
   int Close();
   int Open(const char *filename);
   bool IsOpen() { return is_open_; };

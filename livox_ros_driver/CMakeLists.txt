@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.0)
 # Start livox_ros_driver project
 #---------------------------------------------------------------------------------------
 include(cmake/version.cmake)
-project(livox_ros_driver VERSION ${LIVOX_ROS_DRIVER_VERSION} LANGUAGES CXX)
+project(livox_ros_driver VERSION ${LIVOX_ROS_DRIVER_VERSION} LANGUAGES CXX C)
 message(STATUS "livox_ros_driver version: ${LIVOX_ROS_DRIVER_VERSION}")
 
 #---------------------------------------------------------------------------------------
@@ -83,7 +83,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 ## make sure the livox_sdk_static library is installed
-find_library(LIVOX_SDK_LIBRARY liblivox_sdk_static.a /usr/local/lib)
+find_library(LIVOX_SDK_LIBRARY livox_sdk_static)
+message("LIVOX_SDK_LIBRARY: ${LIVOX_SDK_LIBRARY}")
 
 if((NOT LIVOX_SDK_LIBRARY) OR (NOT EXISTS ${LIVOX_SDK_LIBRARY}))
 	# couldn't find the livox sdk library
@@ -144,9 +145,9 @@ add_executable(${PROJECT_NAME}_node
 #---------------------------------------------------------------------------------------
 # precompile macro and compile option
 #---------------------------------------------------------------------------------------
-target_compile_options(${PROJECT_NAME}_node
-    PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
-    )
+# target_compile_options(${PROJECT_NAME}_node
+#     PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
+#     )
 
 #---------------------------------------------------------------------------------------
 # add projects that depend on
@@ -173,6 +174,13 @@ target_sources(${PROJECT_NAME}_node
 	common/comm/gps_protocol.cpp
 	)
 
+if(WIN32)
+target_sources(${PROJECT_NAME}_node
+	PRIVATE
+	timesync/user_uart/termiWin.cpp
+	)
+endif()
+
 #---------------------------------------------------------------------------------------
 # include file
 #---------------------------------------------------------------------------------------
@@ -194,7 +202,7 @@ target_include_directories(${PROJECT_NAME}_node
 # link libraries
 #---------------------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}_node
-	livox_sdk_static.a
+	${LIVOX_SDK_LIBRARY}
 	${Boost_LIBRARY}
 	${catkin_LIBRARIES}
 	${PCL_LIBRARIES}

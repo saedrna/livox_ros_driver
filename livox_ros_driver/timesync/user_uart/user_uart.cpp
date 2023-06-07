@@ -28,8 +28,19 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifndef _WIN32
 #include <termios.h>
 #include <unistd.h>
+#else
+#include "termiWin.h"
+#include <io.h>
+#include <fcntl.h>
+void usleep(__int64 usec) 
+{ 
+    Sleep(usec / 1000); // convert microseconds to milliseconds
+}
+#endif
 
 namespace livox_ros {
 
@@ -51,12 +62,18 @@ UserUart::~UserUart() {
 }
 
 int UserUart::Open(const char *filename) {
+  #ifdef _WIN32
+  fd_ = _open(filename, O_RDWR, _S_IREAD | _S_IWRITE);  //| O_NDELAY
+  #else
   fd_ = open(filename, O_RDWR | O_NOCTTY);  //| O_NDELAY
+  #endif
   if (fd_ < 0) {
     printf("Open %s fail!\n", filename);
     return -1;
   } else {
+    #ifndef _WIN32
     chmod(filename, S_IRWXU | S_IRWXG | S_IRWXO); /* need add here */
+    #endif
     printf("Open %s success!\n", filename);
   }
 
@@ -87,8 +104,8 @@ int UserUart::Close() {
 int UserUart::Setup(uint8_t baudrate_index, uint8_t parity) {
   static uint32_t baud_map[19] = {
       B2400,    B4800,    B9600,    B19200,   B38400,  B57600,   B115200,
-      B230400,  B460800,  B500000,  B576000,  B921600, B1152000, B1500000,
-      B2000000, B2500000, B3000000, B3500000, B4000000};
+      230400,  460800,  500000,  576000, 921600, 1152000, 1500000,
+      2000000, 2500000, 3000000, 3500000, 4000000};
   tcflag_t baudrate;
   struct termios options;
 
@@ -115,7 +132,9 @@ int UserUart::Setup(uint8_t baudrate_index, uint8_t parity) {
   // options.c_oflag &= ~OPOST;
 
   /** set boadrate */
+  #ifndef _WIN32
   options.c_cflag &= ~CBAUD;
+  #endif
   baudrate = baud_map[baudrate_index];
   options.c_cflag |= baudrate;
 
@@ -175,7 +194,7 @@ int UserUart::Setup(uint8_t baudrate_index, uint8_t parity) {
   return 0;
 }
 
-ssize_t UserUart::Write(const char *buffer, size_t size) {
+size_t UserUart::Write(const char *buffer, size_t size) {
   if (fd_ > 0) {
     return write(fd_, buffer, size);
   } else {
@@ -183,7 +202,7 @@ ssize_t UserUart::Write(const char *buffer, size_t size) {
   }
 }
 
-ssize_t UserUart::Read(char *buffer, size_t size) {
+size_t UserUart::Read(char *buffer, size_t size) {
   if (fd_ > 0) {
     return read(fd_, buffer, size);
   } else {

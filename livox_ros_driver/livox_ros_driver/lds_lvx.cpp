@@ -24,8 +24,11 @@
 
 #include "lds_lvx.h"
 
-#include <stdio.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+
+#include <stdio.h>
 #include <string.h>
 #include <functional>
 #include <memory>
